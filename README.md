@@ -1,0 +1,1 @@
+# snap-thing-services-example

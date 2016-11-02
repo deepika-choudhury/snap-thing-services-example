@@ -1,3 +1,5 @@
 --extra-index-url https://update.synapse-wireless.com/pypi
 paho-mqtt
 synapse-data-collector-client
+snapbuild snap-firmware-2.7.2 synapse-snappy-lib
+synapse-data-collector-client adafruit-io

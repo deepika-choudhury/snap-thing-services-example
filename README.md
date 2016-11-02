@@ -6,6 +6,14 @@ This example creates a simple application to collect light level data from two d
 
 Please follow the [Example](http://dev.synapse-wireless.com/thing-services/example/index.html) tutorial for more info on installing and running this example.
 
+## Prerequisites
+
+Using pip, install the required Python packages for the example:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## License
 
 This example is available under Apache License version 2.0. See [LICENSE.md](LICENSE.md) for more information.

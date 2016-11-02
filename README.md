@@ -1,6 +1,6 @@
 [![](https://cloud.githubusercontent.com/assets/1317406/12406044/32cd9916-be0f-11e5-9b18-1547f284f878.png)](http://www.synapse-wireless.com/)
 
-# SNAP Thing Services - Light Level Example
+# SNAP Thing Services - Light Levels Example
 
 This example creates a simple application to collect light level data from two different SNAP devices and publish their data to a cloud service.
 

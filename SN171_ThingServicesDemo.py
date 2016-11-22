@@ -1,6 +1,6 @@
 """Temperature data collection for EK5100 (for use on SN171 protoboard).
 
-    This Snappy script is used on the protoboard module and provides
+    This SNAPpy script is used on the protoboard module and provides
     a function that can be polled for the ambient room temperature.
 
     To be run on: SN171 protoboard only
@@ -20,6 +20,9 @@ photoCellPin = GPIO_12
 # Start with opposite-scale values.  Auto-calibration will push these out to observed limits.
 photoMax = 0x0000
 photoMin = 0x03FF
+
+# TODO - Adjust this value based on the ambient light level in the room you're in, higher is darker
+photoAlarmThreshold = 50
 
 requiredRange = 100  # another default
 
@@ -68,6 +71,15 @@ def photo_read():
 
     # Return value scaled 0-99
     return (curReading * 99) / 100
+
+
+@setHook(HOOK_100MS)
+def timer100msEvent(currentMs):
+    """Hooked into the HOOK_100MS event. Called every 100ms"""
+    light_level = photo_read()
+    # If the value is above the alarm threshold, send an alarm message
+    if light_level > photoAlarmThreshold:
+        mcastRpc(1, 3, 'light_alarm', str(light_level))
 
 
 def poll_light_level():

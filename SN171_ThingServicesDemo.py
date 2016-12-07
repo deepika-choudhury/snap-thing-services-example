@@ -39,7 +39,7 @@ def photo_read():
     global photoMax, photoMin
 
     # Sample the photocell (connected to ADC channel 0)
-    curReading = readAdc(7)  # connected to GPIO11
+    curReading = readAdc(0)  # connected to GPIO11
 
     # Auto-Calibrate min/max photocell readings
     if photoMax < curReading:

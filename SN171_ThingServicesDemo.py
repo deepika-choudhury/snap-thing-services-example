@@ -1,7 +1,7 @@
-"""Temperature data collection for EK5100 (for use on SN171 protoboard).
+"""Light level data collection for EK5100 (for use on SN171 protoboard).
 
     This SNAPpy script is used on the protoboard module and provides
-    a function that can be polled for the ambient room temperature.
+    a function that can be polled for the photo cell reading.
 
     To be run on: SN171 protoboard only
 

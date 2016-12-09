@@ -1,7 +1,7 @@
-"""Temperature data collection for EK5100 (for use on SN171 protoboard).
+"""Light level data collection for EK5100 (for use on SN171 protoboard).
 
     This SNAPpy script is used on the protoboard module and provides
-    a function that can be polled for the ambient room temperature.
+    a function that can be polled for the photo cell reading.
 
     To be run on: SN171 protoboard only
 
@@ -12,8 +12,6 @@
 
 from synapse.platforms import *
 
-LED2_YLW = GPIO_2
-LED1_GRN = GPIO_1
 photoCellPin = GPIO_12
 
 # Photocell calibration values (fullscale endpoints)
@@ -30,11 +28,6 @@ requiredRange = 100  # another default
 @setHook(HOOK_STARTUP)
 def startup_event():
     """This is hooked into the HOOK_STARTUP event"""
-    # Init LEDs
-    setPinDir(LED1_GRN, True)
-    setPinDir(LED2_YLW, True)
-    pulsePin(LED1_GRN, 500, True)
-    pulsePin(LED2_YLW, 300, True)
 
     # Setup photo cell power
     setPinDir(photoCellPin, True)
@@ -46,7 +39,7 @@ def photo_read():
     global photoMax, photoMin
 
     # Sample the photocell (connected to ADC channel 0)
-    curReading = readAdc(7)  # connected to GPIO11
+    curReading = readAdc(0)  # connected to GPIO11
 
     # Auto-Calibrate min/max photocell readings
     if photoMax < curReading:

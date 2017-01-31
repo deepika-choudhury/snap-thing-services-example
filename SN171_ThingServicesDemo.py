@@ -13,6 +13,7 @@
 from synapse.platforms import *
 
 photoCellPin = GPIO_12
+ledPin = GPIO_10
 
 # Photocell calibration values (fullscale endpoints)
 # Start with opposite-scale values.  Auto-calibration will push these out to observed limits.
@@ -33,6 +34,9 @@ def startup_event():
     setPinDir(photoCellPin, True)
     writePin(photoCellPin, True)  # Set the pin high to power the device
 
+    #Setup led
+    setPinDir(ledPin, True)
+    writePin(ledPin, False)
 
 def photo_read():
     """Get darkness value from photo cell reading, scaled 0-99"""
@@ -79,3 +83,10 @@ def poll_light_level():
     """Return light level in a format compatible with the data collector"""
     light = photo_read()
     return str(light)
+
+def turn_on_light10s(command):
+    """Turn on the light for 10sec"""
+    if command:
+        pulsePin(ledPin, 10000, True)
+    else:
+        pulsePin(ledPin, 10000, False)

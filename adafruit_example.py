@@ -121,7 +121,7 @@ def aio_message(mclient, feed_id, payload):
     if feed_id == ADAFRUIT_IO_ACTUATION_FEED and payload == 'ON':
         data = actuate_nodes()
         d = data['data']['results'][0]['result']
-        mclient.publish(ADAFRUIT_IO_ACTUATION_FEED,d)
+        mclient.publish(ADAFRUIT_IO_ACTUATION_FEED, d)
 
 
 def create_aio_mqtt_client():

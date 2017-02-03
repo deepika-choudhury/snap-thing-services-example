@@ -4,16 +4,14 @@ import base64
 import json
 
 import requests
-import time
 from Adafruit_IO import Client
-
+from Adafruit_IO import MQTTClient
 import paho.mqtt.client as mqtt
-
-
-# Set this to your Adafruit IO API Key
 from requests.auth import HTTPBasicAuth
 
-ADAFRUIT_IO_KEY = #'Add your key here'
+# Set this to your Adafruit IO API Key
+ADAFRUIT_IO_KEY = 'Add your key here'
+ADAFRUIT_IO_USERNAME = 'Add your username here'
 LOG = logging.getLogger(__name__)
 
 # Set this to point to your E20.
@@ -31,8 +29,8 @@ EVENT_TOPIC = 'light_level_alarm'
 
 # Set node address to be actuateD and the function name that is going to be called on the node
 ACTUATION_FUNCTION = 'turn_on_light10s'  # SPY function name
-DEVICE_ADDRESS = 'mac address of the device'  # set mac address of the node to actuate
-ACTUATION_IO_ACTUATION_FEED= 'your actuation feed name in ADAFruit.io '
+ACTUATION_DEVICE_ADDRESS = 'mac address of the device to actuate'  # set mac address of the node to actuate
+ADAFRUIT_IO_ACTUATION_FEED = 'your actuation feed name in ADAFruit.io '
 
 aio = Client(ADAFRUIT_IO_KEY)
 
@@ -54,7 +52,6 @@ class Actuation(object):
     def get(self, *args, **kwargs):
         """Method to do a get to the url and benchmark the time taken.
 
-        :returns timedelta: time difference of get method execution.
         """
         requests.get(
             self.url, verify=False, auth=HTTPBasicAuth(STS_USER, STS_PASS))
@@ -76,7 +73,7 @@ class Actuation(object):
         else:
             response = json.loads(self.get_url(task_url))
 
-        send_adafruit_actuation_payload(response)
+        return response
 
     def get_url(self, url):
         """Get method for a particular url."""
@@ -86,22 +83,73 @@ class Actuation(object):
         return r.content
 
 
+def actuate_nodes():
+    """Actuate nodes"""
+    host = 'https://{0}'.format(E20_HOSTNAME)
+    url = "/api/v1/actuation/requests"
+    device_list = list()
+    device_list.append(ACTUATION_DEVICE_ADDRESS)
+    data = {
+        "function": ACTUATION_FUNCTION,
+        "devices": device_list,
+        "parameters": [True]
+    }
+
+    a = Actuation(host=host, url=url, data=data)
+    response_data = a.post()
+
+    return response_data
+
+
+def create_actuation_feed():
+    """Create the feed for actuation"""
+    feed_id = aio.send(ADAFRUIT_IO_ACTUATION_FEED, 0)
+    return feed_id
+
+
+def aio_connected(mclient):
+    print ('Connected to Adafruit IO! Listening for {0} ...'.format(ADAFRUIT_IO_ACTUATION_FEED))
+
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+    mclient.subscribe(ADAFRUIT_IO_ACTUATION_FEED)
+
+
+def aio_message(mclient, feed_id, payload):
+    print ('Feed {0} received: {1}'.format(feed_id, payload))
+
+    if feed_id == ADAFRUIT_IO_ACTUATION_FEED and payload == 'ON':
+        data = actuate_nodes()
+        d = data['data']['results'][0]['result']
+        mclient.publish(ADAFRUIT_IO_ACTUATION_FEED,d)
+
+
+def create_aio_mqtt_client():
+    mclient = MQTTClient(ADAFRUIT_IO_USERNAME, ADAFRUIT_IO_KEY)
+    # Setup the callback functions defined above.
+    mclient.on_connect = aio_connected
+    mclient.on_message = aio_message
+    mclient.connect()
+
+    return mclient
+
+
 def create_client(host, port):
-    client = mqtt.Client()
-    client.username_pw_set(STS_USER, STS_PASS)
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.connect(host, port, 60)
-    return client
+    eclient = mqtt.Client()
+    eclient.username_pw_set(STS_USER, STS_PASS)
+    eclient.on_connect = on_connect
+    eclient.on_message = on_message
+    eclient.connect(host, port, 60)
+    return eclient
 
 
-def on_connect(client, userdata, flags, rc):
+def on_connect(eclient, userdata, flags, rc):
     print("Connected to E20 with result code " + str(rc))
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    client.subscribe("dc/+/polled")
-    client.subscribe("dc/+/+/data")
+    eclient.subscribe("dc/+/polled")
+    eclient.subscribe("dc/+/+/data")
 
 
 def send_adafruit_payload(data, topic, snap_addr):
@@ -113,21 +161,13 @@ def send_adafruit_payload(data, topic, snap_addr):
     aio.send(feed, light_level)
 
 
-def send_adafruit_actuation_payload(data):
-    # Parse the string from the node
-    d = data['data']['results'][0]['result']
-
-    # Build the Adafruit IO payload
-    aio.send(ACTUATION_IO_ACTUATION_FEED, d)
-
-
 def post_poll_to_adafruit(poll, topic):
     """Post mapped poll results to Adafruit."""
     for snap_addr, data in poll["successful"].iteritems():
         send_adafruit_payload(data, topic, snap_addr)
 
 
-def on_message(client, userdata, msg):
+def on_message(eclient, userdata, msg):
     print("{topic} {payload}".format(topic=msg.topic, payload=str(msg.payload)))
     parsed_payload = json.loads(msg.payload.decode("utf-8"))
     if "dc/{topic}/".format(topic=POLL_TOPIC) in msg.topic:
@@ -136,48 +176,20 @@ def on_message(client, userdata, msg):
         send_adafruit_payload(parsed_payload["data"], EVENT_TOPIC, parsed_payload["address"])
 
 
-def actuate_nodes():
-    """Actuate nodes"""
-    host = "https://%s" % E20_HOSTNAME
-    url = "/api/v1/actuation/requests"
-    device_list = list()
-    device_list.append(DEVICE_ADDRESS)
-    data = {
-        "function": ACTUATION_FUNCTION,
-        "devices": device_list,
-        "parameters": [True]
-    }
-    a = Actuation(host=host, url=url, data=data)
-    a.post()
-
-
-def create_actuation_feed():
-    """Create the feed in adafruit for actuation"""
-    aio.send(ACTUATION_IO_ACTUATION_FEED, 0)
-
-
-def call_actuation():
-    """Call actuation when user toggles the button 'ON'"""
-    while True:
-        data = aio.receive(ACTUATION_IO_ACTUATION_FEED)
-        if str(data.value) in ('success', 'failure'):
-            continue
-        elif str(data.value) == 'ON':
-            actuate_nodes()
-            time.sleep(10)
-
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
-    client = create_client(E20_HOSTNAME, 1883)
-
-    # Actuate node
+    # Actuate light using aio MQTTClient
+    aio_mqtt_client = create_aio_mqtt_client()
     create_actuation_feed()
-    call_actuation()
+    aio_mqtt_client.loop_blocking()
+
+    # DC using E20 HOST mqtt client
+    e20_client = create_client(E20_HOSTNAME, 1883)
 
     # Blocking call that processes network traffic, dispatches callbacks and
     # handles reconnecting.
     # Other loop*() functions are available that give a threaded interface and a
     # manual interface.
 
-    client.loop_forever()
+    e20_client.loop_forever()

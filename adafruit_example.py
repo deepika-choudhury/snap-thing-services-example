@@ -30,7 +30,7 @@ EVENT_TOPIC = 'light_level_alarm'
 # Set node address to be actuateD and the function name that is going to be called on the node
 ACTUATION_FUNCTION = 'turn_on_light10s'  # SPY function name
 ACTUATION_DEVICE_ADDRESS = 'mac address of the device to actuate'  # set mac address of the node to actuate
-ADAFRUIT_IO_ACTUATION_FEED = 'your actuation feed name in ADAFruit.io '
+ACTUATION_TOPIC = 'your actuation feed name in ADAFruit.io '
 
 aio = Client(ADAFRUIT_IO_KEY)
 
@@ -103,25 +103,25 @@ def actuate_nodes():
 
 def create_actuation_feed():
     """Create the feed for actuation"""
-    feed_id = aio.send(ADAFRUIT_IO_ACTUATION_FEED, 0)
+    feed_id = aio.send(ACTUATION_TOPIC, 0)
     return feed_id
 
 
 def aio_connected(mclient):
-    print ('Connected to Adafruit IO! Listening for {0} ...'.format(ADAFRUIT_IO_ACTUATION_FEED))
+    print ('Connected to Adafruit IO! Listening for {0} ...'.format(ACTUATION_TOPIC))
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    mclient.subscribe(ADAFRUIT_IO_ACTUATION_FEED)
+    mclient.subscribe(ACTUATION_TOPIC)
 
 
 def aio_message(mclient, feed_id, payload):
     print ('Feed {0} received: {1}'.format(feed_id, payload))
 
-    if feed_id == ADAFRUIT_IO_ACTUATION_FEED and payload == 'ON':
+    if feed_id == ACTUATION_TOPIC and payload == 'ON':
         data = actuate_nodes()
         d = data['data']['results'][0]['result']
-        mclient.publish(ADAFRUIT_IO_ACTUATION_FEED, d)
+        mclient.publish(ACTUATION_TOPIC, d)
 
 
 def create_aio_mqtt_client():

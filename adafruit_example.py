@@ -182,7 +182,7 @@ if __name__ == '__main__':
     # Actuate light using aio MQTTClient
     aio_mqtt_client = create_aio_mqtt_client()
     create_actuation_feed()
-    aio_mqtt_client.loop_blocking()
+    aio_mqtt_client.loop_background()
 
     # DC using E20 HOST mqtt client
     e20_client = create_client(E20_HOSTNAME, 1883)
